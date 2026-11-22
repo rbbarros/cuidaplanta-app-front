@@ -57,6 +57,7 @@ Troque `192.168.1.10` pelo endereço IP correto do computador onde o backend est
 
 - Cadastro de plantas com nome, cômodo, intervalo de rega e foto.
 - Listagem, exclusão e registro de rega das plantas.
+- Edição do cadastro e do intervalo de rega recomendado pelo Guia IA.
 - Mapa das plantas cadastradas.
 - Guia de luz, rega e adubação gerado por IA.
 
@@ -66,6 +67,7 @@ Troque `192.168.1.10` pelo endereço IP correto do computador onde o backend est
 | --- | --- | --- |
 | `GET` | `/api/plantas` | Listar plantas |
 | `POST` | `/api/plantas` | Cadastrar planta |
+| `PUT` | `/api/plantas/:id` | Atualizar cadastro e intervalo de rega |
 | `PUT` | `/api/plantas/:id/regar` | Registrar rega |
 | `DELETE` | `/api/plantas/:id` | Excluir planta |
 | `POST` | `/api/ia/dicas/:id` | Gerar guia de cuidados |

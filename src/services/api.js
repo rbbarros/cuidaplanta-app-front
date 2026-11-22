@@ -56,6 +56,13 @@ export function criarPlanta(planta) {
   });
 }
 
+export function atualizarPlanta(id, planta) {
+  return requisicao('/plantas/' + id, {
+    method: 'PUT',
+    body: JSON.stringify(planta),
+  });
+}
+
 export function marcarRega(id) {
   return requisicao('/plantas/' + id + '/regar', {
     method: 'PUT',

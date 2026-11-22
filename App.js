@@ -28,7 +28,13 @@ function PlantasStack() {
   return (
     <Stack.Navigator screenOptions={cabecalho}>
       <Stack.Screen name="Lista" component={ListaScreen} options={{ title: 'CuidaPlanta 🌱' }} />
-      <Stack.Screen name="Formulario" component={FormularioScreen} options={{ title: 'Nova Planta' }} />
+      <Stack.Screen
+        name="Formulario"
+        component={FormularioScreen}
+        options={({ route }) => ({
+          title: route.params?.planta ? 'Editar Planta' : 'Nova Planta',
+        })}
+      />
     </Stack.Navigator>
   );
 }

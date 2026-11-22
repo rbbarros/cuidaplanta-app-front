@@ -22,12 +22,20 @@ export default function ListaScreen({ navigation }) {
     }
   }
 
-  function textoProximaRega(ultimaRega, intervaloDias) {
-    if (!intervaloDias) return 'Intervalo de rega não definido';
+  function textoProximaRega(ultimaRega, intervaloDias, nomePlanta = '') {
+    let dias = Number(intervaloDias);
 
-    const dataUltima = new Date(ultimaRega);
+    if (!dias) {
+      const n = nomePlanta.toLowerCase();
+      if (n.includes('cacto') || n.includes('suculenta') || n.includes('espada')) dias = 14;
+      else if (n.includes('orquídea') || n.includes('orquidea')) dias = 7;
+      else if (n.includes('samambaia')) dias = 2;
+      else dias = 4;
+    }
+
+    const dataUltima = new Date(ultimaRega || Date.now());
     const dataProxima = new Date(dataUltima);
-    dataProxima.setDate(dataUltima.getDate() + Number(intervaloDias));
+    dataProxima.setDate(dataUltima.getDate() + dias);
 
     const hoje = new Date();
     const diferencaTempo = dataProxima - hoje;
@@ -40,9 +48,24 @@ export default function ListaScreen({ navigation }) {
   }
 
   async function handleRegar(id) {
-    await marcarRega(id);
-    Alert.alert('Sucesso', 'Rega de hoje registrada!');
-    carregarDados();
+    try {
+      const plantaAtualizada = await marcarRega(id);
+
+      if (!plantaAtualizada?.ultimaRega) {
+        throw new Error('O servidor não retornou a data da rega.');
+      }
+
+      setPlantas((listaAtual) =>
+        listaAtual.map((planta) =>
+          planta._id === id
+            ? { ...planta, ultimaRega: plantaAtualizada.ultimaRega }
+            : planta
+        )
+      );
+      Alert.alert('Sucesso', 'Rega de hoje registrada!');
+    } catch (erro) {
+      Alert.alert('Erro', erro.message || 'Não foi possível registrar a rega.');
+    }
   }
 
   async function handleExcluir(id) {
@@ -93,7 +116,7 @@ export default function ListaScreen({ navigation }) {
                 📍 Cômodo: {planta.comodo || 'Não informado'}
               </Text>
               <Text style={{ color: '#0277BD', fontWeight: 'bold', marginTop: 6 }}>
-                {textoProximaRega(planta.ultimaRega, planta.intervaloRegaDias)}
+                {textoProximaRega(planta.ultimaRega, planta.intervaloRegaDias, planta.nome)}
               </Text>
 
               <TouchableOpacity
@@ -101,6 +124,25 @@ export default function ListaScreen({ navigation }) {
                 onPress={() => handleRegar(planta._id)}
               >
                 <Text style={styles.textoBotao}>💧 Reguei hoje</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ marginTop: 10, alignItems: 'center' }}
+                onPress={() =>
+                  navigation.navigate('Formulario', {
+                    planta: {
+                      _id: planta._id,
+                      nome: planta.nome,
+                      comodo: planta.comodo,
+                      intervaloRegaDias: planta.intervaloRegaDias,
+                      temFoto: Boolean(planta.foto),
+                    },
+                  })
+                }
+              >
+                <Text style={{ color: '#2E7D32', fontSize: 14, fontWeight: 'bold' }}>
+                  ✏️ Editar cadastro e dias de rega
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity

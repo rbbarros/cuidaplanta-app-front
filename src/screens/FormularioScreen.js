@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from '../styles/styles';
-import { criarPlanta } from '../services/api';
+import { atualizarPlanta, criarPlanta } from '../services/api';
 
-export default function FormularioScreen({ navigation }) {
-  const [nome, setNome] = useState('');
-  const [comodo, setComodo] = useState('');
-  const [intervaloRegaDias, setIntervaloRegaDias] = useState('');
+export default function FormularioScreen({ navigation, route }) {
+  const plantaEdicao = route.params?.planta;
+  const [nome, setNome] = useState(plantaEdicao?.nome || '');
+  const [comodo, setComodo] = useState(plantaEdicao?.comodo || '');
+  const [intervaloRegaDias, setIntervaloRegaDias] = useState(
+    plantaEdicao?.intervaloRegaDias ? String(plantaEdicao.intervaloRegaDias) : ''
+  );
   const [foto, setFoto] = useState(null);
 
   async function tirarFoto() {
@@ -28,21 +31,47 @@ export default function FormularioScreen({ navigation }) {
   }
 
   async function salvarPlanta() {
-    if (!nome) {
+    if (!nome.trim()) {
       Alert.alert('Atenção', 'Digite o nome da planta!');
       return;
     }
 
-    try {
-      await criarPlanta({
-        nome,
-        comodo,
-        intervaloRegaDias: Number(intervaloRegaDias) || 3,
-        foto,
-        localizacao: { latitude: -8.1194, longitude: -34.9041 },
-      });
+    const intervalo = intervaloRegaDias.trim() ? Number(intervaloRegaDias) : null;
+    if (intervalo !== null && (!Number.isInteger(intervalo) || intervalo < 1)) {
+      Alert.alert('Atenção', 'Informe um intervalo de rega em dias inteiros, maior que zero.');
+      return;
+    }
 
-      Alert.alert('Sucesso', 'Planta cadastrada!');
+    if (plantaEdicao && intervalo === null) {
+      Alert.alert('Atenção', 'Informe os dias de rega recomendados no Guia IA.');
+      return;
+    }
+
+    try {
+      const dadosPlanta = {
+        nome: nome.trim(),
+        comodo: comodo.trim(),
+        intervaloRegaDias: intervalo,
+      };
+
+      if (foto) {
+        dadosPlanta.foto = foto;
+      }
+
+      if (plantaEdicao) {
+        await atualizarPlanta(plantaEdicao._id, dadosPlanta);
+      } else {
+        await criarPlanta({
+          ...dadosPlanta,
+          foto,
+          localizacao: { latitude: -8.1194, longitude: -34.9041 },
+        });
+      }
+
+      Alert.alert(
+        'Sucesso',
+        plantaEdicao ? 'Cadastro da planta atualizado!' : 'Planta cadastrada!'
+      );
       navigation.goBack();
     } catch (erro) {
       Alert.alert('Erro', erro.message);
@@ -69,17 +98,33 @@ export default function FormularioScreen({ navigation }) {
             onChangeText={setComodo}
           />
 
-          <Text style={styles.label}>Regar a cada quantos dias?</Text>
+          <Text style={styles.label}>
+            {plantaEdicao
+              ? 'Regar a cada quantos dias? *'
+              : 'Regar a cada quantos dias? (opcional)'}
+          </Text>
           <TextInput
             style={styles.input}
-            placeholder="Ex: 3"
+            placeholder={
+              plantaEdicao
+                ? 'Informe os dias recomendados no Guia IA'
+                : 'Deixe vazio para a IA definir ou digite (ex: 3)'
+            }
             keyboardType="numeric"
             value={intervaloRegaDias}
             onChangeText={setIntervaloRegaDias}
           />
 
+          {plantaEdicao?.temFoto && !foto ? (
+            <Text style={{ color: '#555', marginBottom: 8 }}>
+              A foto atual será mantida. Você pode tirar outra para substituí-la.
+            </Text>
+          ) : null}
+
           <TouchableOpacity style={styles.botaoVerde} onPress={tirarFoto}>
-            <Text style={styles.textoBotao}>📷 Tirar Foto da Planta</Text>
+            <Text style={styles.textoBotao}>
+              {plantaEdicao ? '📷 Trocar Foto da Planta' : '📷 Tirar Foto da Planta'}
+            </Text>
           </TouchableOpacity>
 
           {foto && (
@@ -90,7 +135,9 @@ export default function FormularioScreen({ navigation }) {
             style={[styles.botaoVerde, { backgroundColor: '#1B5E20', marginTop: 20 }]}
             onPress={salvarPlanta}
           >
-            <Text style={styles.textoBotao}>💾 Salvar Planta</Text>
+            <Text style={styles.textoBotao}>
+              {plantaEdicao ? '💾 Salvar Alterações' : '💾 Salvar Planta'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
