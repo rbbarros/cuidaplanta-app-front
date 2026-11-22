@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles } from '../styles/styles';
-import { listarPlantas, marcarRega, excluirPlanta } from '../services/api';
+import { listarPlantas, marcarRega, removerPlanta } from '../services/api';
 
 export default function ListaScreen({ navigation }) {
   const [plantas, setPlantas] = useState([]);
@@ -18,13 +18,13 @@ export default function ListaScreen({ navigation }) {
       const lista = await listarPlantas();
       setPlantas(lista);
     } catch (erro) {
-      console.log('Ainda sem conexão com o backend');
+      console.log('Erro ao listar:', erro.message);
     }
   }
 
   function textoProximaRega(ultimaRega, intervaloDias) {
     if (!intervaloDias) return 'Intervalo de rega não definido';
-    
+
     const dataUltima = new Date(ultimaRega);
     const dataProxima = new Date(dataUltima);
     dataProxima.setDate(dataUltima.getDate() + Number(intervaloDias));
@@ -46,21 +46,22 @@ export default function ListaScreen({ navigation }) {
   }
 
   async function handleExcluir(id) {
-    await excluirPlanta(id);
+    await removerPlanta(id);
     carregarDados();
   }
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitulo}>CuidaPlanta 🌱</Text>
-        <Text style={styles.headerSubtitulo}>
-          Acompanhe suas plantinhas de casa
-        </Text>
-      </View>
-
       <View style={styles.conteudo}>
-        <Text style={styles.tituloSecao}>🌿 Minhas Plantas</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text style={styles.tituloSecao}>🌿 Minhas Plantas</Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#2E7D32', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 }}
+            onPress={() => navigation.navigate('Formulario')}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>+ Nova Planta</Text>
+          </TouchableOpacity>
+        </View>
 
         {plantas.length === 0 ? (
           <View style={[styles.card, { alignItems: 'center', paddingVertical: 30 }]}>
@@ -71,9 +72,9 @@ export default function ListaScreen({ navigation }) {
             <Text style={{ color: '#555', textAlign: 'center', marginTop: 6, marginBottom: 16 }}>
               Que tal cadastrar a sua primeira plantinha para acompanhar a rega e os cuidados?
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.botaoVerde, { width: '100%' }]}
-              onPress={() => navigation.navigate('Cadastrar')}
+              onPress={() => navigation.navigate('Formulario')}
             >
               <Text style={styles.textoBotao}>+ Cadastrar Planta</Text>
             </TouchableOpacity>
@@ -95,14 +96,14 @@ export default function ListaScreen({ navigation }) {
                 {textoProximaRega(planta.ultimaRega, planta.intervaloRegaDias)}
               </Text>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.botaoRegar}
                 onPress={() => handleRegar(planta._id)}
               >
                 <Text style={styles.textoBotao}>💧 Reguei hoje</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={{ marginTop: 10, alignItems: 'center' }}
                 onPress={() => handleExcluir(planta._id)}
               >

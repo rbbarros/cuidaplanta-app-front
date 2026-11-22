@@ -1,6 +1,9 @@
 import { StyleSheet } from 'react-native';
 
-export const styles = StyleSheet.create({
+export const cores = {
+  verde: '#2E7D32',
+  branco: '#FFFFFF',
+};export const styles = StyleSheet.create({
   // Fundo verde bem clarinho (igual ao seu print)
   container: {
     flex: 1,

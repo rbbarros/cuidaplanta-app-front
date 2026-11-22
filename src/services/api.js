@@ -1,40 +1,73 @@
-const API_URL = 'http://192.168.1.4';
+import Constants from 'expo-constants';
 
-// 1. Buscar todas as plantas
-export async function listarPlantas() {
-  const resposta = await fetch(`${API_URL}/plantas`);
-  return resposta.json();
+function obterUrlApi() {
+  const urlConfigurada = process.env.EXPO_PUBLIC_API_URL;
+  if (urlConfigurada) {
+    return urlConfigurada.replace(/\/+$/, '');
+  }
+
+  const hostExpo = Constants.expoConfig?.hostUri;
+  if (!hostExpo) {
+    throw new Error(
+      'Backend não configurado. Defina EXPO_PUBLIC_API_URL com a URL do servidor.'
+    );
+  }
+
+  const host = hostExpo.replace(/:\d+$/, '');
+  return `http://${host}:3000/api`;
 }
 
-// 2. Cadastrar uma nova planta
-export async function cadastrarPlanta(dados) {
-  const resposta = await fetch(`${API_URL}/plantas`, {
+// Função auxiliar: faz a requisição e já devolve o JSON
+async function requisicao(caminho, opcoes) {
+  const apiUrl = obterUrlApi();
+  let resposta;
+
+  try {
+    resposta = await fetch(apiUrl + caminho, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opcoes,
+    });
+  } catch (erro) {
+    throw new Error(
+      `Não foi possível conectar ao backend em ${apiUrl}. Confirme que o servidor está ativo e acessível pelo celular. (${erro.message})`
+    );
+  }
+
+  const dados = await resposta.json();
+
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Erro ao falar com o servidor.');
+  }
+  return dados;
+}
+
+export function listarPlantas() {
+  return requisicao('/plantas');
+}
+
+export function buscarPlanta(id) {
+  return requisicao('/plantas/' + id);
+}
+
+export function criarPlanta(planta) {
+  return requisicao('/plantas', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dados),
+    body: JSON.stringify(planta),
   });
-  return resposta.json();
 }
 
-// 3. Marcar que regou a planta hoje
-export async function marcarRega(id) {
-  const resposta = await fetch(`${API_URL}/plantas/${id}/regar`, {
+export function marcarRega(id) {
+  return requisicao('/plantas/' + id + '/regar', {
     method: 'PUT',
   });
-  return resposta.json();
 }
 
-// 4. Excluir uma planta
-export async function excluirPlanta(id) {
-  await fetch(`${API_URL}/plantas/${id}`, {
-    method: 'DELETE',
-  });
+export function removerPlanta(id) {
+  return requisicao('/plantas/' + id, { method: 'DELETE' });
 }
 
-// 5. Pedir dicas para a IA (Gemini)
-export async function gerarGuiaIA(id) {
-  const resposta = await fetch(`${API_URL}/ia/dicas/${id}`, {
-    method: 'POST',
-  });
-  return resposta.json();
+export function gerarDicasIA(id) {
+  return requisicao('/ia/dicas/' + id, { method: 'POST' });
 }
+
+export const gerarGuiaIA = gerarDicasIA;

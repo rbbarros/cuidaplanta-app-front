@@ -9,21 +9,23 @@ export default function IAScreen() {
   const [dicaGerada, setDicaGerada] = useState('');
   const [plantaSelecionada, setPlantaSelecionada] = useState('');
   const [carregando, setCarregando] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState('');
+
+  const carregarPlantas = useCallback(async () => {
+    try {
+      const lista = await listarPlantas();
+      setPlantas(lista);
+      setErroCarregamento('');
+    } catch (erro) {
+      setErroCarregamento(erro.message || 'Não foi possível carregar as plantas.');
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       carregarPlantas();
-    }, [])
+    }, [carregarPlantas])
   );
-
-  async function carregarPlantas() {
-    try {
-      const lista = await listarPlantas();
-      setPlantas(lista);
-    } catch (erro) {
-      console.log('Ainda sem conexão com o backend');
-    }
-  }
 
   async function pedirDicas(planta) {
     setCarregando(true);
@@ -34,7 +36,10 @@ export default function IAScreen() {
       const resposta = await gerarGuiaIA(planta._id);
       setDicaGerada(resposta.dicas);
     } catch (erro) {
-      Alert.alert('Erro', 'Não foi possível gerar as dicas. Verifique o servidor.');
+      Alert.alert(
+        'Erro',
+        erro.message || 'Não foi possível gerar as dicas. Verifique o servidor.'
+      );
     } finally {
       setCarregando(false);
     }
@@ -54,7 +59,7 @@ export default function IAScreen() {
 
         {plantas.length === 0 ? (
           <Text style={{ color: '#666', textAlign: 'center', marginVertical: 20 }}>
-            Cadastre uma planta primeiro para consultar a IA.
+            {erroCarregamento || 'Cadastre uma planta primeiro para consultar a IA.'}
           </Text>
         ) : (
           plantas.map((planta) => (
